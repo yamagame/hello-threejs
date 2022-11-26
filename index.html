@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>My first three.js app</title>
+    <style>
+      body {
+        margin: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <script src="js/three.js"></script>
+    <script src="js/GLTFLoader.js"></script>
+    <script>
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(
+        75,
+        window.innerWidth / window.innerHeight,
+        0.1,
+        1000
+      );
+
+      const directionalLight = new THREE.DirectionalLight(0xa09e5f, 0.5);
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+      const pointLight = new THREE.PointLight(0xffffff, 0.5);
+      pointLight.position.set(0, 10, 10);
+
+      scene.add(directionalLight);
+      scene.add(ambientLight);
+      scene.add(pointLight);
+
+      const renderer = new THREE.WebGLRenderer();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setClearColor(0x0000ff, 1);
+      document.body.appendChild(renderer.domElement);
+
+      const obj = [];
+
+      camera.position.z = 3;
+
+      let d = 0;
+
+      function animate() {
+        requestAnimationFrame(animate);
+
+        obj.forEach((cube) => {
+          cube.position.x += d;
+          if (cube.position.x < -3 || cube.position.x > 3) d = -d;
+        });
+
+        renderer.render(scene, camera);
+      }
+
+      animate();
+
+      const loader = new THREE.GLTFLoader();
+
+      const cube = loader.load(
+        "glb/monky.glb",
+        function (gltf) {
+          scene.add(gltf.scene);
+          obj.push(gltf.scene);
+        },
+        undefined,
+        function (error) {
+          console.error(error);
+        }
+      );
+    </script>
+  </body>
+</html>
