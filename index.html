@@ -39,14 +39,14 @@
 
       camera.position.z = 3;
 
-      let d = 0;
+      let d = 0; //0.005;
 
       function animate() {
         requestAnimationFrame(animate);
 
-        obj.forEach((cube) => {
-          cube.position.x += d;
-          if (cube.position.x < -3 || cube.position.x > 3) d = -d;
+        obj.forEach((o) => {
+          o.rotation.x += d;
+          o.rotation.y += d;
         });
 
         renderer.render(scene, camera);
@@ -58,9 +58,20 @@
 
       const cube = loader.load(
         "glb/monky.glb",
-        function (gltf) {
-          scene.add(gltf.scene);
-          obj.push(gltf.scene);
+        function (object) {
+          object.scene.traverse((child) => {
+            if (child instanceof THREE.Mesh && child.name === "Suzanne") {
+              for (i = -1; i < 2; i++) {
+                const mesh = child.clone();
+                mesh.position.x = i * 1.5;
+                mesh.scale.x = 0.5;
+                mesh.scale.y = 0.5;
+                mesh.scale.z = 0.5;
+                scene.add(mesh);
+                obj.push(mesh);
+              }
+            }
+          });
         },
         undefined,
         function (error) {
