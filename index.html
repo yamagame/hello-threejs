@@ -159,7 +159,7 @@
           });
         }
         containsPoint(pos) {
-          return this.children.some((mesh) => {
+          return this.children.filter((mesh) => {
             return mesh.box.containsPoint(pos);
           });
         }
@@ -221,8 +221,11 @@
           if (avater.position.z > 5) {
             avater.position.z = 5;
           }
-          if (field.containsPoint(avater.position)) {
-            avater.position.copy(pos);
+          hitObjects = field.containsPoint(avater.position);
+          if (hitObjects.length > 0) {
+            if (hitObjects[0].obj.geometry) {
+              avater.position.copy(pos);
+            }
           }
         }
         renderer.render(scene, camera);
