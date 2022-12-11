@@ -272,9 +272,12 @@
           //   }
           // }
           hitObjects = field.containsPoint(avater.position);
+          const avaterHead = avater.obj.getObjectByName("Body2002");
+          avaterHead.material.color.set(0xffffff);
           if (hitObjects.length > 0) {
             if (hitObjects.some((o) => o.hitCheck(pos, avater.position))) {
               avater.position.copy(pos);
+              avaterHead.material.color.set(0xff0000);
             }
           }
         }
