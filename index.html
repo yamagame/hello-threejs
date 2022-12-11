@@ -122,12 +122,52 @@
           return this.obj.rotation;
         }
         idle() {}
+        hitCheck(opos, npos) {
+          const { geometry } = this.obj;
+          const ind = geometry.getIndex().array;
+          const vert = geometry.getAttribute("position").array;
+          const vert3 = (p) => {
+            const x = vert[p * 3 + 0];
+            const y = vert[p * 3 + 1];
+            const z = vert[p * 3 + 2];
+            return new THREE.Vector3(x, y, z).applyMatrix4(this.obj.matrixWorld);
+          };
+          const triangles = [];
+          for (let i = 0; i < ind.length; i += 3) {
+            const p1 = ind[i + 0];
+            const p2 = ind[i + 1];
+            const p3 = ind[i + 2];
+            const v1 = vert3(p1);
+            const v2 = vert3(p2);
+            const v3 = vert3(p3);
+            const tri = new THREE.Triangle(v1, v2, v3);
+            triangles.push(tri);
+          }
+          const r = triangles
+            .map((tri) => {
+              const oldpos = opos.clone();
+              const newpos = npos.clone();
+              const v = tri.closestPointToPoint(oldpos, newpos);
+              const d = npos.distanceTo(v);
+              return { tri, d, v };
+            })
+            .sort((a, b) => {
+              return a.d - b.d;
+            });
+          if (r.length > 0) {
+            const d = Math.abs(r[0].d);
+            if (0.2 > d && d > 0) {
+              return true;
+            }
+          }
+          return false;
+        }
       }
 
       class AvaterObject extends GameObject {
         idle() {
           super.idle();
-          const speed = 0.025;
+          const speed = 0.02;
           if (gameController.left()) {
             this.position.x -= speed;
           }
@@ -153,8 +193,12 @@
           obj.children.forEach((o) => {
             if (o.name !== "wall") {
               const g = new GameObject(o);
-              g.box = new THREE.Box3();
-              this.children.push(g);
+              if (o.geometry) {
+                g.box = new THREE.Box3();
+                this.children.push(g);
+              } else {
+                console.log("undefined geometry", o.name);
+              }
             }
           });
         }
@@ -178,8 +222,8 @@
         1000
       );
 
-      const directionalLight = new THREE.DirectionalLight(0xa09e5f, 1.5);
-      const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+      const directionalLight = new THREE.DirectionalLight(0xa09e5f, 1.0);
+      const ambientLight = new THREE.AmbientLight(0xffffff, 1.5);
       const pointLight = new THREE.PointLight(0xffffff, 0.5);
       pointLight.position.set(-10, 10, -5);
 
@@ -221,9 +265,15 @@
           if (avater.position.z > 5) {
             avater.position.z = 5;
           }
+          // if (pos.x != avater.position.x || pos.z != avater.position.z) {
+          //   const plane = field.children[0];
+          //   if (plane.hitCheck(pos, avater.position)) {
+          //     avater.position.copy(pos);
+          //   }
+          // }
           hitObjects = field.containsPoint(avater.position);
           if (hitObjects.length > 0) {
-            if (hitObjects[0].obj.geometry) {
+            if (hitObjects.some((o) => o.hitCheck(pos, avater.position))) {
               avater.position.copy(pos);
             }
           }
@@ -238,20 +288,29 @@
       const cube = loader.load(
         "glb/object.glb",
         (object) => {
-          object.scene.traverse((child) => {
-            if (child.name === "avater") {
-              avater = new AvaterObject(child.clone());
-              avater.position.y = 0.1;
-              scene.add(avater.obj);
-              gameObject.push(avater);
+          try {
+            if (object.scene.traverse) {
+              object.scene.traverse((child) => {
+                if (child && child.name) {
+                  if (child.name.indexOf("avater") === 0) {
+                    console.log(child.name);
+                    avater = new AvaterObject(child.clone());
+                    avater.position.y = 0.5;
+                    scene.add(avater.obj);
+                    gameObject.push(avater);
+                    child.visible = false;
+                  } else if (child.name.indexOf("field") === 0) {
+                    field = new FieldObject(child);
+                    gameObject.push(field);
+                  }
+                }
+              });
+              scene.add(object.scene);
+              ready = true;
             }
-            if (child.name === "field") {
-              field = new FieldObject(child.clone());
-              scene.add(field.obj);
-              gameObject.push(field);
-            }
-          });
-          ready = true;
+          } catch (err) {
+            console.log(err);
+          }
         },
         undefined,
         function (error) {
