@@ -214,17 +214,31 @@
         }
       }
 
+      class CameraObject extends GameObject {
+        constructor(obj) {
+          super(obj);
+          obj.rotation.x = -1.2;
+          obj.position.y = 15;
+          obj.position.z = 5;
+        }
+        idle(pos) {
+          const d = pos.clone();
+          d.z += 6;
+          d.sub(this.obj.position).divideScalar(32);
+          this.obj.position.add(d);
+          this.obj.position.y = 15;
+        }
+      }
+
       const scene = new THREE.Scene();
-      const camera = new THREE.PerspectiveCamera(
-        60,
-        window.innerWidth / window.innerHeight,
-        0.1,
-        1000
+      const camera = new CameraObject(
+        new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 0.1, 1000)
       );
 
-      const directionalLight = new THREE.DirectionalLight(0xa09e5f, 1.0);
-      const ambientLight = new THREE.AmbientLight(0xffffff, 1.5);
-      const pointLight = new THREE.PointLight(0xffffff, 0.5);
+      const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+      directionalLight.position.set(-1, 1, 1);
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+      const pointLight = new THREE.PointLight(0xffffff, 0.2);
       pointLight.position.set(-10, 10, -5);
 
       scene.add(directionalLight);
@@ -240,10 +254,6 @@
       let field = null;
       let ready = false;
       const gameObject = [];
-
-      camera.rotation.x = -1.2;
-      camera.position.y = 10;
-      camera.position.z = 5;
 
       const gameController = new GameController();
 
@@ -280,8 +290,11 @@
               avaterHead.material.color.set(0xff0000);
             }
           }
+          pointLight.position.x = avater.position.x;
+          pointLight.position.z = avater.position.z;
+          camera.idle(avater.position);
         }
-        renderer.render(scene, camera);
+        renderer.render(scene, camera.obj);
       }
 
       animate();
