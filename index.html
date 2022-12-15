@@ -12,223 +12,12 @@
   <body>
     <script src="js/three.js"></script>
     <script src="js/GLTFLoader.js"></script>
-    <script>
-      const KEY_UP = 12;
-      const KEY_DOWN = 13;
-      const KEY_RIGHT = 15;
-      const KEY_LEFT = 14;
-      const KEY_A = 3;
-      const KEY_B = 2;
-      const KEY_C = 1;
-      const KEY_D = 0;
-      class GameController {
-        constructor() {
-          this.gamepads = {};
-          this.keys = {};
-
-          const gamepadHandler = (event, connecting) => {
-            var gamepad = event.gamepad;
-            if (connecting) {
-              const buttons = new Array(gamepad.buttons.length).fill(false);
-              this.gamepads[gamepad.index] = {
-                gamepad: navigator.getGamepads()[gamepad.index],
-                buttons,
-              };
-            } else {
-              delete this.gamepads[gamepad.index];
-            }
-          };
-
-          window.addEventListener(
-            "gamepadconnected",
-            (e) => {
-              gamepadHandler(e, true);
-            },
-            false
-          );
-          window.addEventListener(
-            "gamepaddisconnected",
-            (e) => {
-              gamepadHandler(e, false);
-            },
-            false
-          );
-
-          window.addEventListener("keydown", (e) => {
-            this.keys[e.code] = true;
-          });
-          window.addEventListener("keyup", (e) => {
-            this.keys[e.code] = false;
-          });
-        }
-        idle() {
-          console.log(this.gamepads);
-        }
-        button(index) {
-          const keys = Object.keys(this.gamepads);
-          let buttons = [];
-          keys.some((key) => {
-            buttons = navigator.getGamepads()[key].buttons.map((v) => v.pressed);
-            return true;
-          });
-          return buttons && buttons.length > index ? buttons[index] : false;
-        }
-        axes(index) {
-          let axis = [];
-          keys.some((key) => {
-            buttons = navigator.getGamepads()[key].axes.map((v) => v);
-            return true;
-          });
-          return axes && axes.length > index ? axes[index] : false;
-        }
-        up() {
-          return this.keys["ArrowUp"] || this.button(KEY_UP);
-        }
-        down() {
-          return this.keys["ArrowDown"] || this.button(KEY_DOWN);
-        }
-        left() {
-          return this.keys["ArrowLeft"] || this.button(KEY_LEFT);
-        }
-        right() {
-          return this.keys["ArrowRight"] || this.button(KEY_RIGHT);
-        }
-        action() {
-          return (
-            this.keys["Space"] ||
-            this.button(KEY_A) ||
-            this.button(KEY_B) ||
-            this.button(KEY_C) ||
-            this.button(KEY_D)
-          );
-        }
-      }
-
-      class GameObject {
-        constructor(obj) {
-          this.obj = obj;
-          this.box = new THREE.Box3();
-        }
-        get name() {
-          return this.obj.name;
-        }
-        get position() {
-          return this.obj.position;
-        }
-        get scale() {
-          return this.obj.scale;
-        }
-        get rotation() {
-          return this.obj.rotation;
-        }
-        idle() {}
-        hitCheck(opos, npos) {
-          const { geometry } = this.obj;
-          const ind = geometry.getIndex().array;
-          const vert = geometry.getAttribute("position").array;
-          const vert3 = (p) => {
-            const x = vert[p * 3 + 0];
-            const y = vert[p * 3 + 1];
-            const z = vert[p * 3 + 2];
-            return new THREE.Vector3(x, y, z).applyMatrix4(this.obj.matrixWorld);
-          };
-          const triangles = [];
-          for (let i = 0; i < ind.length; i += 3) {
-            const p1 = ind[i + 0];
-            const p2 = ind[i + 1];
-            const p3 = ind[i + 2];
-            const v1 = vert3(p1);
-            const v2 = vert3(p2);
-            const v3 = vert3(p3);
-            const tri = new THREE.Triangle(v1, v2, v3);
-            triangles.push(tri);
-          }
-          const r = triangles
-            .map((tri) => {
-              const oldpos = opos.clone();
-              const newpos = npos.clone();
-              const v = tri.closestPointToPoint(oldpos, newpos);
-              const d = npos.distanceTo(v);
-              return { tri, d, v };
-            })
-            .sort((a, b) => {
-              return a.d - b.d;
-            });
-          if (r.length > 0) {
-            const d = Math.abs(r[0].d);
-            if (0.2 > d && d > 0) {
-              return true;
-            }
-          }
-          return false;
-        }
-      }
-
-      class AvaterObject extends GameObject {
-        idle() {
-          super.idle();
-          const speed = 0.02;
-          if (gameController.left()) {
-            this.position.x -= speed;
-          }
-          if (gameController.right()) {
-            this.position.x += speed;
-          }
-          if (gameController.up()) {
-            this.position.z -= speed;
-          }
-          if (gameController.down()) {
-            this.position.z += speed;
-          }
-          if (gameController.action()) {
-            //
-          }
-        }
-      }
-
-      class FieldObject extends GameObject {
-        constructor(obj) {
-          super(obj);
-          this.children = [];
-          obj.children.forEach((o) => {
-            if (o.name !== "wall") {
-              const g = new GameObject(o);
-              if (o.geometry) {
-                g.box = new THREE.Box3();
-                this.children.push(g);
-              } else {
-                console.log("undefined geometry", o.name);
-              }
-            }
-          });
-        }
-        containsPoint(pos) {
-          return this.children.filter((mesh) => {
-            return mesh.box.containsPoint(pos);
-          });
-        }
-        idle() {
-          this.children.forEach((mesh) => {
-            mesh.box.copy(mesh.obj.geometry.boundingBox).applyMatrix4(this.obj.matrixWorld);
-          });
-        }
-      }
-
-      class CameraObject extends GameObject {
-        constructor(obj) {
-          super(obj);
-          obj.rotation.x = -1.2;
-          obj.position.y = 15;
-          obj.position.z = 5;
-        }
-        idle(pos) {
-          const d = pos.clone();
-          d.z += 6;
-          d.sub(this.obj.position).divideScalar(32);
-          this.obj.position.add(d);
-          this.obj.position.y = 15;
-        }
-      }
+    <script type="module">
+      import { GameController } from "./js/GameController.js";
+      import { GameObject } from "./js/GameObject.js";
+      import { AvaterObject } from "./js/AvaterObject.js";
+      import { FieldObject } from "./js/FieldObject.js";
+      import { CameraObject } from "./js/CameraObject.js";
 
       const scene = new THREE.Scene();
       const camera = new CameraObject(
@@ -238,12 +27,12 @@
       const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
       directionalLight.position.set(-1, 1, 1);
       const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
-      const pointLight = new THREE.PointLight(0xffffff, 0.2);
-      pointLight.position.set(-10, 10, -5);
+      // const pointLight = new THREE.PointLight(0xffffff, 0.2);
+      // pointLight.position.set(-10, 10, -5);
 
       scene.add(directionalLight);
       scene.add(ambientLight);
-      scene.add(pointLight);
+      // scene.add(pointLight);
 
       const renderer = new THREE.WebGLRenderer();
       renderer.setSize(window.innerWidth, window.innerHeight);
@@ -261,37 +50,35 @@
         gameController.button();
         requestAnimationFrame(animate);
         if (ready) {
+          // avater の移動前の位置を保存
           const pos = avater.position.clone();
+          // avater 移動
           gameObject.forEach((o) => o.idle());
-          if (avater.position.x < -5) {
-            avater.position.x = -5;
-          }
-          if (avater.position.x > 5) {
-            avater.position.x = 5;
-          }
-          if (avater.position.z < -5) {
-            avater.position.z = -5;
-          }
-          if (avater.position.z > 5) {
-            avater.position.z = 5;
-          }
-          // if (pos.x != avater.position.x || pos.z != avater.position.z) {
-          //   const plane = field.children[0];
-          //   if (plane.hitCheck(pos, avater.position)) {
-          //     avater.position.copy(pos);
-          //   }
-          // }
-          hitObjects = field.containsPoint(avater.position);
+          // 誤差対策で y 方向へ 0.1 移動
+          const yoffset = 0.1;
+          const orgPos = pos.clone();
+          orgPos.y = yoffset;
+          // 新しい位置
+          const newPos = avater.position.clone();
+          newPos.y = yoffset;
+          // 新しい位置でバウンディングボックスチェック
+          const hitObjects = field.containsPoint(newPos);
+          // avater の頭を白に
           const avaterHead = avater.obj.getObjectByName("Body2002");
           avaterHead.material.color.set(0xffffff);
+          // 接触したオブジェクトがあるか？
           if (hitObjects.length > 0) {
-            if (hitObjects.some((o) => o.hitCheck(pos, avater.position))) {
+            // 接触していればポリゴン単位に判定
+            if (hitObjects.some((o) => o.hitCheck(orgPos, newPos))) {
+              const y = avater.position.y;
               avater.position.copy(pos);
+              avater.position.y = y;
+              // avater の頭を赤に
               avaterHead.material.color.set(0xff0000);
             }
           }
-          pointLight.position.x = avater.position.x;
-          pointLight.position.z = avater.position.z;
+          // pointLight.position.x = avater.position.x;
+          // pointLight.position.z = avater.position.z;
           camera.idle(avater.position);
         }
         renderer.render(scene, camera.obj);
@@ -300,7 +87,6 @@
       animate();
 
       const loader = new THREE.GLTFLoader();
-
       const cube = loader.load(
         "glb/object.glb",
         (object) => {
@@ -309,9 +95,7 @@
               object.scene.traverse((child) => {
                 if (child && child.name) {
                   if (child.name.indexOf("avater") === 0) {
-                    console.log(child.name);
-                    avater = new AvaterObject(child.clone());
-                    avater.position.y = 0.5;
+                    avater = new AvaterObject(child.clone(), gameController);
                     scene.add(avater.obj);
                     gameObject.push(avater);
                     child.visible = false;
