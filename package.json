@@ -11,6 +11,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "five-server": "^0.1.7"
+    "five-server": "^0.1.7",
+    "three": "^0.147.0"
   }
 }
