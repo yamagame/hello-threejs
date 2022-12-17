@@ -64,7 +64,7 @@
           // 新しい位置でバウンディングボックスチェック
           const hitObjects = field.containsPoint(newPos);
           // avater の頭を白に
-          const avaterHead = avater.obj.getObjectByName("Body2002");
+          const avaterHead = avater.obj.getObjectByName("head");
           avaterHead.material.color.set(0xffffff);
           // 接触したオブジェクトがあるか？
           if (hitObjects.length > 0) {

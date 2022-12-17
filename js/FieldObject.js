@@ -6,7 +6,7 @@ export class FieldObject extends GameObject {
     this.children = [];
     obj.children.forEach((o) => {
       const g = new GameObject(o);
-      if (o.geometry) {
+      if (o.geometry && o.name != "ground") {
         g.box = new THREE.Box3();
         this.children.push(g);
       } else {
