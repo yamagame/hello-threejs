@@ -1,4 +1,5 @@
-import { GameObject } from "./GameObject.js";
+import * as THREE from 'three'
+import { GameObject } from './GameObject.js'
 
 export class AvaterObject extends GameObject {
   constructor(obj, gameController) {
@@ -8,23 +9,23 @@ export class AvaterObject extends GameObject {
       g: 0.005,
       y: 0,
       s: 0,
-      trig: false
+      trig: false,
     }
   }
   idle() {
-    super.idle();
-    const speed = 0.02;
+    super.idle()
+    const speed = 0.02
     if (this.gameController.left()) {
-      this.position.x -= speed;
+      this.position.x -= speed
     }
     if (this.gameController.right()) {
-      this.position.x += speed;
+      this.position.x += speed
     }
     if (this.gameController.up()) {
-      this.position.z -= speed;
+      this.position.z -= speed
     }
     if (this.gameController.down()) {
-      this.position.z += speed;
+      this.position.z += speed
     }
     this.position.y += this.jump.y
     if (this.position.y < 0) {
@@ -38,7 +39,7 @@ export class AvaterObject extends GameObject {
       if (this.jump.s < 2 && !this.jump.trig) {
         this.jump.trig = true
         this.jump.y = 0.15
-        this.jump.s++;
+        this.jump.s++
       }
     } else {
       this.jump.trig = false
