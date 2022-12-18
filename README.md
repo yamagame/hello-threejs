@@ -2,7 +2,7 @@
 
 [three.js]([three.js](https://threejs.org/)) を使用したサンプル
 
-![img](./img/screenshot.png)
+![img](./static/img/screenshot.png)
 
 ## 準備
 
